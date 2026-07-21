@@ -1,0 +1,35 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = "postgresql://neondb_owner:npg_4QGIDRmcoCW7@ep-proud-paper-avjxh7s6.c-11.us-east-1.aws.neon.tech/neondb?sslmode=require"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  habits    Habit[]
+}
+
+model Habit {
+  id          String            @id @default(cuid())
+  title       String
+  description String?
+  streak      Int               @default(0)
+  userId      String
+  createdAt   DateTime          @default(now())
+  user        User              @relation(fields: [userId], references: [id])
+  completions HabitCompletion[]
+}
+
+model HabitCompletion {
+  id          String   @id @default(cuid())
+  completedAt DateTime @default(now())
+  habitId     String
+  habit       Habit    @relation(fields: [habitId], references: [id])
+}
