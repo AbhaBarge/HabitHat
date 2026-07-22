@@ -1,6 +1,6 @@
-# HabitSphere
+# HabitHat
 
-AI-powered Distributed Event-Driven Habit Tracking Platform
+Distributed Event-Driven Habit Tracking Platform
 
 Current Phase
 
