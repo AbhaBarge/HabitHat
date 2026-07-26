@@ -2,17 +2,19 @@ import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import api from "../lib/api";
 
-export default function Login() {
+export default function Register() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
 
-async function login() {
+async function register() {
   try {
-    const response = await api.post("/auth/login", {
-      email,
-      password,
-    });
+    const response = await api.post("/auth/register", {
+        name,
+        email,
+        password,
+        });
 
     localStorage.setItem(
       "token",
@@ -50,12 +52,20 @@ async function login() {
         <div className="bg-white rounded-3xl shadow-2xl p-10 w-full max-w-md">
 
           <h2 className="text-3xl font-bold mb-2">
-            Welcome Back 👋
+            Welcome, new user ! 👋
           </h2>
 
           <p className="text-slate-500 mb-8">
-            Sign in to HabitHat
+            Create an account to get started
           </p>
+
+          <input
+            type="string"
+            className="w-full border rounded-xl p-4 mb-6"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Username"
+            />
 
           <input
             type="email"
@@ -74,24 +84,11 @@ async function login() {
           />
 
           <button
-          onClick={login}
+          onClick={register}
           className="bg-emerald-600 text-white w-full rounded-xl py-3"
         >
-          Sign In
+          Register
         </button>
-
-        <p className="text-center mt-6">
-
-          Don't have an account?
-
-          <Link
-            to="/register"
-            className="text-emerald-600 ml-2"
-          >
-            Register
-          </Link>
-
-        </p>
 
         </div>
       </div>

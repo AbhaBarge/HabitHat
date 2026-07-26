@@ -17,14 +17,20 @@ model User {
 }
 
 model Habit {
-  id          String            @id @default(cuid())
-  title       String
-  description String?
-  streak      Int               @default(0)
-  userId      String
-  createdAt   DateTime          @default(now())
-  user        User              @relation(fields: [userId], references: [id])
-  completions HabitCompletion[]
+  id              String            @id @default(cuid())
+  title           String
+  description     String?
+  category        String?
+  color           String?
+  frequency       String            @default("daily")
+  completed       Boolean           @default(false)
+  streak          Int               @default(0)
+  lastCompletedAt DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @default(now()) @updatedAt
+  userId          String
+  user            User              @relation(fields: [userId], references: [id])
+  completions     HabitCompletion[]
 }
 
 model HabitCompletion {

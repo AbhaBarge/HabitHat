@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import api from "../services/api";
+import api from "../lib/api";
 import {
   Flame,
   Target,
@@ -8,7 +8,14 @@ import {
   Plus,
   CheckCircle2,
   Circle,
+  Trash2,
 } from "lucide-react";
+import { HabitService } from "../services/habit";
+import ProgressRing from "../components/dashboard/ProgressRing";
+import WeeklyChart from "../components/dashboard/WeeklyChart";
+import StatCard from "../components/dashboard/StatCard";
+import { motion } from "framer-motion";
+
 
 interface Habit {
   id: string;
@@ -20,40 +27,44 @@ export default function Dashboard() {
 
   const [title, setTitle] = useState("");
   const [habits, setHabits] = useState<Habit[]>([]);
+  const [stats, setStats] = useState({
+    totalHabits: 0,
+    completedToday: 0,
+    completionRate: 0,
+    longestStreak: 0,
+  });
+
+  async function loadDashboard() {
+    const [habitData, statsData] = await Promise.all([
+      HabitService.getHabits(),
+      HabitService.getStats(),
+    ]);
+
+    setHabits(habitData);
+    setStats(statsData);
+  }
 
   async function loadHabits() {
-    const res = await api.get("/habits", {
-      params: {
-        userId: user.id,
-      },
-    });
+    const res = await api.get("/habits");
 
     setHabits(res.data);
   }
 
   useEffect(() => {
-    loadHabits();
+    loadDashboard();
   }, []);
-
-  async function createHabit() {
-    if (!title.trim()) return;
-
-    await api.post("/habits", {
-      title,
-      userId: user.id,
-    });
-
-    setTitle("");
-
-    loadHabits();
-  }
 
   const completion = habits.length
     ? Math.round((habits.length / Math.max(habits.length, 5)) * 100)
     : 0;
 
   return (
-    <div className="min-h-screen bg-slate-100">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="min-h-screen bg-slate-100"
+    >
 
       <header className="bg-white shadow-sm px-10 py-6 flex justify-between items-center">
 
@@ -67,28 +78,45 @@ export default function Dashboard() {
           </p>
         </div>
 
-        <div className="flex gap-3">
+      </header>
 
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="New Habit"
-            className="border rounded-xl px-4 py-3 w-72"
-          />
+      <div className="mx-8 mt-8 bg-white rounded-3xl shadow p-6">
 
-          <button
-            onClick={createHabit}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-5 flex items-center gap-2"
-          >
-            <Plus size={18} />
-            Add Habit
-          </button>
+          <h2 className="text-xl font-bold mb-4">
+            Create Habit
+          </h2>
+
+          <div className="flex gap-3">
+
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="border rounded-xl p-3 flex-1"
+              placeholder="Workout, Reading..."
+            />
+
+            <button
+              onClick={async () => {
+
+                if (!title) return;
+
+                await HabitService.createHabit(title);
+
+                setTitle("");
+
+                loadDashboard();
+
+              }}
+              className="bg-emerald-600 text-white px-6 rounded-xl"
+            >
+              Add Habit
+            </button>
+
+          </div>
 
         </div>
 
-      </header>
-
-      <main className="max-w-7xl mx-auto p-10">
+      <main className="w-full px-10 py-8">
 
         {/* Stats */}
 
@@ -97,22 +125,34 @@ export default function Dashboard() {
           <StatCard
             icon={<Flame className="text-orange-500" />}
             title="Current Streak"
-            value="8 Days"
+            value={`${stats.longestStreak} Days`}
           />
 
           <StatCard
             icon={<Target className="text-indigo-500" />}
             title="Completion"
-            value={`${completion}%`}
+            value={`${stats.completionRate}%`}
           />
 
           <StatCard
             icon={<Calendar className="text-green-500" />}
             title="Today's Habits"
-            value={String(habits.length)}
+            value={String(stats.totalHabits)}
           />
 
-        </div>
+          </div>
+
+          <div className="grid lg:grid-cols-3 gap-6 mt-8">
+
+              <ProgressRing percentage={stats.completionRate} />
+
+              <div className="lg:col-span-2">
+                <WeeklyChart />
+              </div>
+
+          </div>
+
+          
 
         <div className="grid lg:grid-cols-3 gap-6 mt-8">
 
@@ -130,24 +170,52 @@ export default function Dashboard() {
               </p>
             )}
 
-            {habits.map((habit) => (
+            {habits.map((habit: any) => (
 
-              <div
+              <motion.div
                 key={habit.id}
-                className="flex justify-between items-center py-4 border-b last:border-none"
+                layout
+                whileHover={{ scale: 1.01 }}
+                transition={{ duration: 0.2 }}
+                className="flex justify-between items-center py-4 border-b"
               >
 
-                <span className="text-lg">
+                <span className="font-medium">
                   {habit.title}
                 </span>
 
-                <Circle className="text-slate-400" />
+                <div className="flex gap-4 items-center">
 
-              </div>
+                  <button
+                    onClick={async () => {
+                      await HabitService.completeHabit(habit.id);
+                      loadDashboard();
+                    }}
+                  >
+                    {habit.completed ? (
+                      <CheckCircle2 className="text-emerald-600" />
+                    ) : (
+                      <Circle />
+                    )}
+                  </button>
+
+                  <Trash2
+                    size={18}
+                    className="cursor-pointer text-red-500"
+                    onClick={async () => {
+                      await HabitService.deleteHabit(habit.id);
+                      loadDashboard();
+                    }}
+                  />
+
+                </div>
+
+              </motion.div>
 
             ))}
 
           </div>
+          
 
           {/* AI Coach */}
 
@@ -183,40 +251,6 @@ export default function Dashboard() {
 
       </main>
 
-    </div>
-  );
-}
-
-function StatCard({
-  icon,
-  title,
-  value,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  value: string;
-}) {
-  return (
-    <div className="bg-white rounded-3xl shadow p-8">
-
-      <div className="flex justify-between items-center">
-
-        <div>
-
-          <p className="text-slate-500">
-            {title}
-          </p>
-
-          <h2 className="text-3xl font-bold mt-2">
-            {value}
-          </h2>
-
-        </div>
-
-        {icon}
-
-      </div>
-
-    </div>
+    </motion.div>
   );
 }
